@@ -1,74 +1,83 @@
-function main()
-{
-  var stats = initStats();          // To show FPS information
-  var scene = new THREE.Scene();    // Create main scene
-  var renderer = initRenderer();    // View function in util/utils
-  var camera = initCamera(new THREE.Vector3(0, -30, 15)); // Init camera in this position
+import * as THREE from '/build/three.module.js';
+import Stats from '/jsm/libs/stats.module.js';
+import {OrbitControls} from '/jsm/controls/OrbitControls.js';
 
-  // Enable mouse rotation, pan, zoom etc.
-  var trackballControls = new THREE.TrackballControls( camera, renderer.domElement );
+main();
 
-  // Show axes (parameter is size of each axis)
-  var axesHelper = new THREE.AxesHelper( 12 );
-  scene.add( axesHelper );
+function main(){
 
-  // create the ground plane
-  var planeGeometry = new THREE.PlaneGeometry(20, 20);
-  planeGeometry.translate(0.0, 0.0, -0.02); // To avoid conflict with the axeshelper
-  var planeMaterial = new THREE.MeshBasicMaterial({
-      color: "rgba(150, 150, 150)",
-      side: THREE.DoubleSide,
-  });
-  var plane = new THREE.Mesh(planeGeometry, planeMaterial);
-  // add the plane to the scene
-  scene.add(plane);
+    var scene = new THREE.Scene();    // Create main scene
 
-  // create a cube
-  var cubeGeometry = new THREE.BoxGeometry(1, 1, 0); // 'width', 'height', and 'depth'
-  var cubeMaterial = new THREE.MeshNormalMaterial();
-  var cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-  // position the cube
-  cube.position.set(-4.0, 0.0, 0.50);
-  // add the cube to the scene
-  scene.add(cube);
+    var renderer = new THREE.WebGLRenderer();    // View function in util/utils
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
 
-  // create a sphere
-  var sphereGeometry = new THREE.SphereGeometry(2, 32, 32); // 'radius', 'widthSegments', and 'heightSegments'
-  var sphereMaterial = new THREE.MeshNormalMaterial();
-  var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-  // position the sphere
-  sphere.position.set(0.0, 0.0, 2.0);
-  // add the sphere to the scene
-  scene.add(sphere);
+    var camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 1000 ); // Specify camera type like this
+    camera.position.set(0, -30, 15); // Set position like this
+    camera.lookAt(new THREE.Vector3(0, 0, 0)); // Set look at coordinate like this
 
-  // create a cylinder
-  var cylinderGeometry = new THREE.CylinderGeometry(1, 1, 3, 32); // 'radiusTop', 'radiusBottom', 'height', 'radialSegments'
-  var cylinderMaterial = new THREE.MeshNormalMaterial();
-  var cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
-  // position the cylinder
-  cylinder.position.set(4.0, 0.0, 1.0);
-  // add the cylinder to the scene
-  scene.add(cylinder);
+    var trackballControls = new OrbitControls(camera, renderer.domElement);
 
-  // Use this to show information onscreen
-  controls = new InfoBox();
-    controls.add("Basic Scene");
-    controls.addParagraph();
-    controls.add("Use mouse to interact:");
-    controls.add("* Left button to rotate");
-    controls.add("* Right button to translate (pan)");
-    controls.add("* Scroll to zoom in/out.");
-    controls.show();
+    // Show axes (parameter is size of each axis)
+    var axesHelper = new THREE.AxesHelper( 12 );
+    scene.add( axesHelper );
 
-  // Listen window size changes
-  window.addEventListener( 'resize', function(){onWindowResize(camera, renderer)}, false );
+    // create the ground plane
+    var planeGeometry = new THREE.PlaneGeometry(20, 20);
+    planeGeometry.translate(0.0, 0.0, -0.02); // To avoid conflict with the axeshelper
+    var planeMaterial = new THREE.MeshBasicMaterial({
+        color: "rgba(150, 150, 150)",
+        side: THREE.DoubleSide,
+    });
+    var plane = new THREE.Mesh(planeGeometry, planeMaterial);
+    // add the plane to the scene
+    scene.add(plane);
 
-  render();
-  function render()
-  {
-    stats.update(); // Update FPS
-    trackballControls.update(); // Enable mouse movements
-    requestAnimationFrame(render);
-    renderer.render(scene, camera) // Render scene
-  }
+
+    // create a cube
+    var cubeGeometry = new THREE.BoxGeometry(1, 1, 1); // 'width', 'height', and 'depth'
+    var cubeMaterial = new THREE.MeshNormalMaterial();
+    var cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+    // position the cube
+    cube.position.set(-4.0, 0.0, 0.50);
+    // add the cube to the scene
+    scene.add(cube);
+
+    // create a sphere
+    var sphereGeometry = new THREE.SphereGeometry(2, 32, 32); // 'radius', 'widthSegments', and 'heightSegments'
+    var sphereMaterial = new THREE.MeshNormalMaterial();
+    var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+    // position the sphere
+    sphere.position.set(0.0, 0.0, 2.0);
+    // add the sphere to the scene
+    scene.add(sphere);
+
+    // create a cylinder
+    var cylinderGeometry = new THREE.CylinderGeometry(1, 1, 3, 32); // 'radiusTop', 'radiusBottom', 'height', 'radialSegments'
+    var cylinderMaterial = new THREE.MeshNormalMaterial();
+    var cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
+    // position the cylinder
+    cylinder.position.set(4.0, 0.0, 1.0);
+    // add the cylinder to the scene
+    scene.add(cylinder);
+
+    // Listen window size changes
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        render();
+    }, false);
+
+    const stats = Stats();          // To show FPS information
+    document.body.appendChild(stats.dom);
+
+    const render = function (){
+        requestAnimationFrame(render);
+        trackballControls.update(); // Enable mouse movements
+        renderer.render(scene, camera); // Render scene
+        stats.update(); // Update FPS
+    }
+
+    render();
 }
