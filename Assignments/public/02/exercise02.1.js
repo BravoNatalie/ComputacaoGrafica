@@ -1,6 +1,17 @@
 import * as THREE from '/build/three.module.js';
 import Stats from '/jsm/libs/stats.module.js';
 import {OrbitControls} from '/jsm/controls/OrbitControls.js';
+import {bar} from '../../utils/KeyboardState';
+
+console.log(bar());
+const cameraUp = new THREE.Vector3(0, 1, 0)
+const cameraPosition = new THREE.Vector3(0, -30, 15);
+const cameraLookAt = new THREE.Vector3(0, 0, 0);
+
+// let keyboard = teste();
+// console.log('1');
+// console.log(keyboard);
+
 
 main();
 
@@ -12,9 +23,10 @@ function main(){
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    var camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 1000 ); // Specify camera type like this
-    camera.position.set(0, -30, 15); // Set position like this
-    camera.lookAt(new THREE.Vector3(0, 0, 0)); // Set look at coordinate like this
+    var camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000 ); // Specify camera type like this
+    camera.position.copy(cameraPosition); 
+    camera.lookAt(cameraLookAt);
+    camera.up.copy(cameraUp);
 
     var trackballControls = new OrbitControls(camera, renderer.domElement);
 
@@ -30,34 +42,12 @@ function main(){
         side: THREE.DoubleSide,
     });
     var plane = new THREE.Mesh(planeGeometry, planeMaterial);
-    // add the plane to the scene
     scene.add(plane);
 
-    // create a cube 1
-    var cubeGeometry = new THREE.BoxGeometry(1, 1, 1); // 'width', 'height', and 'depth'
-    var cubeMaterial = new THREE.MeshNormalMaterial();
-    var cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-    // position the cube
-    cube.position.set(-4.0, 0.0, 0.50);
-    // add the cube to the scene
-    scene.add(cube);
-
-    // create a cube 2
-    var cubeGeometry = new THREE.BoxGeometry(2, 2, 2); // 'width', 'height', and 'depth'
-    var cubeMaterial = new THREE.MeshNormalMaterial();
-    var cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-    // position the cube
-    cube.position.set(0.0, 0.0, 1.0);
-    // add the cube to the scene
-    scene.add(cube);
-
-    // create a cube 3
     var cubeGeometry = new THREE.BoxGeometry(3, 3, 3); // 'width', 'height', and 'depth'
     var cubeMaterial = new THREE.MeshNormalMaterial();
     var cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-    // position the cube
-    cube.position.set(4.0, 0.0, 1.5);
-    // add the cube to the scene
+    cube.position.set(0.0, 0.0, 1.5);
     scene.add(cube);
 
 
@@ -75,6 +65,7 @@ function main(){
     const render = function (){
         requestAnimationFrame(render);
         trackballControls.update(); // Enable mouse movements
+        //keyboardUpdate()
         renderer.render(scene, camera); // Render scene
         stats.update(); // Update FPS
     }
@@ -83,3 +74,22 @@ function main(){
 }
 
  
+function keyboardUpdate() {
+
+    keyboard.update();
+
+    var speed = 30;
+  	var moveDistance = speed * clock.getDelta();
+
+  	if ( keyboard.down("left") )   cube.translateX( -1 );
+  	if ( keyboard.down("right") )  cube.translateX(  1 );
+    if ( keyboard.down("up") )     cube.translateY(  1 );
+  	if ( keyboard.down("down") )   cube.translateY( -1 );
+
+  	if ( keyboard.pressed("A") )  cube.translateX( -moveDistance );
+  	if ( keyboard.pressed("D") )  cube.translateX(  moveDistance );
+    if ( keyboard.pressed("W") )  cube.translateY(  moveDistance );
+  	if ( keyboard.pressed("S") )  cube.translateY( -moveDistance );
+
+  	if ( keyboard.pressed("space") ) cube.position.set(0.0, 0.0, 2.0);
+  }

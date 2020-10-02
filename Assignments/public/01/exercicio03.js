@@ -44,42 +44,30 @@ function main(){
         },
     };
 
-    const handler = {
-        set: function(obj, prop, value){
-        
-        if(prop === 'x'){
-            console.log('mudou x');
-        } else if(prop === 'y'){
+    let x = cubesDefinition.currentPosition.x;
+    let y = cubesDefinition.currentPosition.y;
+    let z = cubesDefinition.currentPosition.z;
+    
+    for (var i = 0; i < 3; i++) {
+        for(var j = 0; j< 3; j++){
+            cubesDefinition.numberOfCubes -= 1;
+            // create a cube
+            var cubeGeometry = new THREE.BoxGeometry(
+                cubesDefinition.size,
+                cubesDefinition.size,
+                cubesDefinition.size
+            );
+            var cubeMaterial = new THREE.MeshNormalMaterial();
+            var cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
 
-        } else if(prop === 'z'){
-            
+            cube.position.set(x, y, z);
+            y += cubesDefinition.spacingInBetween + cubesDefinition.size / 2;;
+
+            // add the cube to the scene
+            scene.add(cube);
         }
-        }
-    };
-
-    var proxyX = new Proxy(cubesDefinition.currentPosition, handler);
-
-    for (var i = 0; i <= cubesDefinition.numberOfCubes; i++) {
-        // create a cube
-        var cubeGeometry = new THREE.BoxGeometry(
-        cubesDefinition.size,
-        cubesDefinition.size,
-        cubesDefinition.size
-        );
-        var cubeMaterial = new THREE.MeshNormalMaterial();
-        var cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-        // position the cube
-        cube.position.set(
-        cubesDefinition.currentPosition.x,
-        cubesDefinition.currentPosition.y,
-        cubesDefinition.currentPosition.z
-        );
-
-        cubesDefinition.currentPosition.x +=
-        cubesDefinition.spacingInBetween + cubesDefinition.size / 2;
-
-        // add the cube to the scene
-        scene.add(cube);
+        x += cubesDefinition.spacingInBetween + cubesDefinition.size / 2;
+        y = 0;
     }
 
     // Listen window size changes
