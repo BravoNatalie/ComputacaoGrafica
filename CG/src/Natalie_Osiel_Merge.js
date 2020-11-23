@@ -1,9 +1,6 @@
  class Skeleton{
    constructor(x,z){
       this.position = {x: x, y: 1.05, z: z};
-      this.skeleton = {
-
-      };
 
       //torso
       this.lowerJoin = Helper.createSphere(0.35, 32, 32, "rgb(255,0,50)");
@@ -44,7 +41,7 @@
       var headJoin = Helper.createSphere();
       neck.add(headJoin);
       Helper.resetObjectMatrix(headJoin);
-      Helper.setSpherePosition(headJoin, 0.0, 0.5, 0.0);
+      Helper.setSpherePosition(headJoin, 0.0, 0.8, 0.0);
 
       /* ARM */
       // direito
@@ -126,7 +123,7 @@
       var c10 = Helper.createCone(0.15, 3.0, 25, "rgb(0,0,180)");
       hipE.add(c10);
       Helper.resetObjectMatrix(c10);
-      Helper.setConePosition(c10,degreesToRadians(-50), 0.0, 1.5, 0.0);
+      Helper.setConePosition(c10,degreesToRadians(-55), 0.0, 1.5, 0.0);
 
       var kneeE = Helper.createSphere();
       c10.add(kneeE);
@@ -160,7 +157,7 @@
       var c13 = Helper.createCone(0.15, 3.0, 25, "rgb(0,0,180)");
       hipD.add(c13);
       Helper.resetObjectMatrix(c13);
-      Helper.setConePosition(c13,degreesToRadians(50), 0.0, 1.5, 0.0);
+      Helper.setConePosition(c13,degreesToRadians(55), 0.0, 1.5, 0.0);
 
       var kneeD = Helper.createSphere();
       c13.add(kneeD);
@@ -177,10 +174,83 @@
       c14.add(ankleD);
       Helper.resetObjectMatrix(ankleD);
       Helper.setSpherePosition(ankleD, 0.0, 1.0, 0.0);
+
+
+      this.skeleton = {
+        "torso": {
+          "spheres":{
+            "midJoin": midJoin, 
+            "upperJoin": upperJoin,
+            "headJoin": headJoin,
+            "lowerJoin": this.lowerJoin
+          },
+          "cones": {
+            "c1": {"mesh":c1, "angle": degreesToRadians(0)},
+            "c2": {"mesh":c2, "angle": degreesToRadians(0)},
+            "neck": {"mesh":neck, "angle": degreesToRadians(0)}
+          }      
+        },
+        "rightSide":{
+          "arm":{
+            "spheres": {
+              "shoulder": shoulder,
+              "elbow": elbow,
+              "fist": fist
+            },
+            "cones": {
+              "c1": {"mesh":c3, "angle": degreesToRadians(100)},
+              "c2": {"mesh":c4, "angle": degreesToRadians(75)}, 
+              "c3": {"mesh": c5, "angle": degreesToRadians(0)}
+            }
+          },
+          "leg":{
+            "spheres": {
+              "hip": hipD,
+              "knee": kneeD,
+              "ankle": ankleD
+            },
+            "cones": {
+              "c1": {"mesh":c12, "angle": degreesToRadians(120)}, //160
+              "c2": {"mesh": c13, "angle": degreesToRadians(50)}, // 0
+              "c3": {"mesh": c14,  "angle": degreesToRadians(10)} 
+            }
+          }
+        },
+        "leftSide":{
+          "arm":{
+            "spheres": {
+              "shoulder": shoulderE,
+              "elbow": elbowE,
+              "fist": fistE
+            },
+            "cones": {
+              "c1": {"mesh":c6, "angle": degreesToRadians(-95)},
+              "c2": {"mesh": c7, "angle": degreesToRadians(-90)}, 
+              "c3": {"mesh": c8, "angle": degreesToRadians(0)}
+            }
+          },
+          "leg":{
+            "spheres": {
+              "hip": hipE,
+              "knee": kneeE,
+              "ankle": ankleE
+            },
+            "cones": {
+              "c1": {"mesh":c9, "angle": degreesToRadians(-120)},
+              "c2": {"mesh": c10, "angle": degreesToRadians(-50)}, 
+              "c3": {"mesh": c11, "angle": degreesToRadians(-10)} 
+            }
+          }
+        }    
+      };
    }
 
    getSkeleton(){
     return this.lowerJoin;
+   }
+
+   getSkeletonObject(){
+     return this.skeleton;
    }
 
  }
@@ -249,13 +319,30 @@
 
   var mat4 = new THREE.Matrix4();
 
-  /* Construindo o esqueleto */
+  /* Construindo os esqueletos */
 
-  scene.add(new Skeleton(0,0).getSkeleton());
-  scene.add(new Skeleton(10,6).getSkeleton());
-  scene.add(new Skeleton(7,10).getSkeleton());
-  scene.add(new Skeleton(3,20).getSkeleton());
-  scene.add(new Skeleton(21,0).getSkeleton());
+
+  let skeleton_01 = new Skeleton(0,0);
+  scene.add(skeleton_01.getSkeleton());
+
+  let skeleton_02 = new Skeleton(-10,6);
+  scene.add(skeleton_02.getSkeleton());
+
+  let skeleton_03 = new Skeleton(7,-10);
+  scene.add(skeleton_03.getSkeleton());
+
+  let skeleton_04 = new Skeleton(3,20);
+  scene.add(skeleton_04.getSkeleton());
+
+  let skeleton_05 = new Skeleton(21,0);
+  scene.add(skeleton_05.getSkeleton());
+
+    /* INICIO: Segundo trabalho */
+
+  var walkAnimationOn = true;
+  var stop = false;
+
+    /* FIM: Segundo trabalho */
 
     
   window.addEventListener( 'resize', function(){onWindowResize(camera, renderer)}, false );
@@ -269,40 +356,5 @@
     renderer.render(scene, camera); // Render scene
   }
 
-  function resetObjectMatrix(object){
-    object.matrixAutoUpdate = false;
-    object.matrix.identity();
-  }
-  
-  function setSpherePosition(sphere, x=0.0, y=1.0, z=0.0){
-    sphere.matrix.multiply(mat4.makeTranslation(x, y, z));
-  }
-  
-  function setConePosition(cone, angle, x=0.0, y=1.0, z=0.0){
-    cone.matrix.multiply(mat4.makeRotationZ(angle));
-    cone.matrix.multiply(mat4.makeTranslation(x, y, z));
-  }
-
 } 
-
-
-function createSphere(radius=0.2, widthSegments=32, heightSegments=32, color="rgb(180,180,255)") {
-  var sphereGeometry = new THREE.SphereGeometry(radius, widthSegments, heightSegments);
-  var sphereMaterial = new THREE.MeshPhongMaterial({
-    color: color,
-  });
-  var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-  sphere.receiveShadow = true;
-  sphere.castShadow = true;
-  return sphere;
-}
-
-function createCone(radius=0.15, height=2.0, radialSegment=25, color="rgb(0,0,180)") {
-  var coneGeometry = new THREE.ConeGeometry(radius, height, radialSegment);
-  var coneMaterial = new THREE.MeshPhongMaterial({ color: color });
-  var cone = new THREE.Mesh(coneGeometry, coneMaterial);
-  cone.receiveShadow = true;
-  cone.castShadow = true;
-  return cone;
-}
 
