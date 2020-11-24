@@ -6,7 +6,6 @@
       this.lowerJoin = Helper.createSphere(0.35, 32, 32, "rgb(255,0,50)");
       //scene.add(lowerJoin);
 
-      this.lowerJoin.translateZ(10.0);
       Helper.resetObjectMatrix(this.lowerJoin);
       Helper.setSpherePosition(this.lowerJoin, this.position.x, this.position.y, this.position.z);
 
@@ -294,6 +293,7 @@
  }
 
  
+ 
  function main() {
 
   var stats = initStats(); 
@@ -317,13 +317,14 @@
   groundPlane.translateZ(-4.37);
   scene.add(groundPlane);
 
-  var mat4 = new THREE.Matrix4();
+  // // var mat4 = new THREE.Matrix4();
 
-  /* Construindo os esqueletos */
-
-
-  let skeleton_01 = new Skeleton(0,0);
-  scene.add(skeleton_01.getSkeleton());
+  // /* Construindo os esqueletos */
+  
+  let skeletonObject_01 = new Skeleton(0,0);
+  let skeleton_01 = skeletonObject_01.getSkeleton();
+  scene.add(skeleton_01);
+  
 
   let skeleton_02 = new Skeleton(-10,6);
   scene.add(skeleton_02.getSkeleton());
@@ -337,23 +338,43 @@
   let skeleton_05 = new Skeleton(21,0);
   scene.add(skeleton_05.getSkeleton());
 
-    /* INICIO: Segundo trabalho */
 
-  var walkAnimationOn = true;
-  var stop = false;
 
-    /* FIM: Segundo trabalho */
 
-    
+  
+
+  // //   /* INICIO: Segundo trabalho */
+
+  
+  var tween = new TWEEN.Tween(skeleton_01.position)
+    .to({ x : -10.0, z:-15.0}, 3000)
+    .delay(2000)
+    .onUpdate(() => {
+      Helper.resetObjectMatrix(skeleton_01);
+      Helper.setSpherePosition(skeleton_01, skeleton_01.position.x, 1.05, skeleton_01.position.z);
+    })
+    .onComplete(() => {
+      //qualquer coisa
+    })
+    .start()
+    .repeat(3);
+
+
+  
+
+
+  //   /* FIM: Segundo trabalho */
+  
   window.addEventListener( 'resize', function(){onWindowResize(camera, renderer)}, false );
 
   render();
-
-  function render() {
+  function render()
+  {
     stats.update(); // Update FPS
-    trackballControls.update();
+    trackballControls.update(); // Enable mouse movements
     requestAnimationFrame(render);
-    renderer.render(scene, camera); // Render scene
+    TWEEN.update();
+    renderer.render(scene, camera) // Render scene
   }
 
 } 
