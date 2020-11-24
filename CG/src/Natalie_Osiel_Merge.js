@@ -357,7 +357,8 @@
       //qualquer coisa
     })
     .start()
-    .repeat(3);
+    .repeat(3)
+    .yoyo(true);
 
 
   
