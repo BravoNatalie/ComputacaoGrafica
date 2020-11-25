@@ -261,7 +261,7 @@
       let leftLegC2 = this.skeleton.leftSide.leg.cones.c2;
       let leftLegC3 = this.skeleton.leftSide.leg.cones.c3;
     
-      let seconds = 1500;
+      let seconds = 800;
       let easingFunction = TWEEN.Easing.Cubic.InOut;
       let armAngle = 20;
       let forearmAngle = 30;
@@ -577,6 +577,16 @@
     cone.castShadow = true;
     return cone;
   }
+
+  static createCylinder(radiusTop=0.5, radiusBottom=0.5, height=30.0, radialSegments=30.0)
+  {
+    var cylinderGeometry = new THREE.CylinderGeometry(radiusTop, radiusBottom, height, radialSegments);
+    var cylinderMaterial = new THREE.MeshPhongMaterial( {color:'rgb(255,255,255)'} );
+    var cylinder = new THREE.Mesh( cylinderGeometry, cylinderMaterial );
+      cylinder.castShadow = true;
+      cylinder.receiveShadow = true;
+    return cylinder;
+  }
  }
 
  
@@ -585,24 +595,201 @@
 
   var stats = initStats(); 
   var scene = new THREE.Scene(); 
-  var renderer = initRenderer(); 
-  var camera = initCamera(new THREE.Vector3(15, 15, 15)); 
-  var light = initDefaultLighting(scene, new THREE.Vector3(11, 36, 23));
+  var renderer = initRenderer();
 
-  var trackballControls = new THREE.TrackballControls(
-    camera,
-    renderer.domElement
-  );
+  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.set(0, 7, 0);
+  camera.lookAt(new THREE.Vector3(0, 7, 0));
+  scene.add(camera); 
+  
+  //var light = initDefaultLighting(scene, new THREE.Vector3(11, 36, 23));
 
   var axesHelper = new THREE.AxesHelper(12);
   axesHelper.translateY(-4.35);
-  axesHelper.visible = true;
+  axesHelper.visible = false;
   scene.add(axesHelper);
 
-  var groundPlane = createGroundPlane(100, 100); // width and height
+  //tela inicial
+  const raycaster = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0).normalize(), 0, 2);
+  const controls = new THREE.PointerLockControls(camera, renderer.domElement);
+  const blocker = document.getElementById('blocker');
+  const instructions = document.getElementById('instructions');
+  instructions.addEventListener('click', function () {
+
+      controls.lock();
+
+  }, false);
+  
+  controls.addEventListener('lock', function () {
+      instructions.style.display = 'none';
+       blocker.style.display = 'none';
+  });
+  
+  controls.addEventListener('unlock', function () {
+      blocker.style.display = 'block';
+      instructions.style.display = '';
+  });
+
+  scene.add(controls.getObject());
+
+  //Criando movimentação em primeira pessoa
+  const speed = 20;
+  let moveForward = false;
+  let moveBackward = false;
+  let moveLeft = false;
+  let moveRight = false;
+
+  window.addEventListener('keydown', (event) => {movementControls(event.keyCode, true); selectCharacter(event.keyCode, true)});
+  window.addEventListener('keyup', (event) => movementControls(event.keyCode, false));
+
+  function movementControls(key, value) {
+      switch (key) {
+          case 87: // W
+              moveForward = value;
+              break;
+          case 83: // S
+              moveBackward = value;
+              break;
+          case 65: // A
+              moveLeft = value;
+              break;
+          case 68: // D
+              moveRight = value;
+              break;
+      }
+  }
+
+  function moveAnimate(delta) {
+      raycaster.ray.origin.copy(controls.getObject().position);
+
+      if (moveForward) {
+          controls.moveForward(speed * delta);
+      }
+      else if (moveBackward) {
+          controls.moveForward(speed * -1 * delta);
+      }
+      if (moveRight) {
+          controls.moveRight(speed * delta);
+      }
+      else if (moveLeft) {
+          controls.moveRight(speed * -1 * delta);
+      }
+  }
+
+  //Carregando texturas para o solo
+  var textureLoader = new THREE.TextureLoader();
+  var sand = textureLoader.load('../assets/textures/areia2.jpg');
+
+  //Criando solo e aplicando repetição de textura
+  var groundPlane = createGroundPlane(1350, 1350); // width and height
   groundPlane.rotateX(degreesToRadians(-90));
   groundPlane.translateZ(-4.37);
+  groundPlane.receiveShadow = true;
+  groundPlane.castShadow = false;
+  groundPlane.material.map = sand;
+  groundPlane.material.map.repeat.set(2500,2500);
+  groundPlane.material.map.wrapS = THREE.RepeatWrapping;
+  groundPlane.material.map.wrapT =THREE.RepeatWrapping;
+  groundPlane.material.map.minFilter =THREE.LinearFilter;
+  groundPlane.material.map.magFilter =THREE.LinearFilter;
   scene.add(groundPlane);
+
+  //Criando Array de texturas para a skybox
+  let materialArray = [];
+  let texture_ft = new THREE.TextureLoader().load( '../assets/textures/tras.png');
+  let texture_bk = new THREE.TextureLoader().load( '../assets/textures/esq.png');
+  let texture_up = new THREE.TextureLoader().load( '../assets/textures/ceu.png');
+  let texture_dn = new THREE.TextureLoader().load( '../assets/textures/chao.png');
+  let texture_rt = new THREE.TextureLoader().load( '../assets/textures/frente.png');
+  let texture_lf = new THREE.TextureLoader().load( '../assets/textures/dir.png'); 
+  
+  materialArray.push(new THREE.MeshBasicMaterial( { map: texture_ft }));
+  materialArray.push(new THREE.MeshBasicMaterial( { map: texture_bk })); 
+  materialArray.push(new THREE.MeshBasicMaterial( { map: texture_up }));
+  materialArray.push(new THREE.MeshBasicMaterial( { map: texture_dn }));
+  materialArray.push(new THREE.MeshBasicMaterial( { map: texture_rt }));
+  materialArray.push(new THREE.MeshBasicMaterial( { map: texture_lf }));
+
+  //Aplicando texturas as faces do cubo
+  for (let i = 0; i < 6; i++)
+  materialArray[i].side = THREE.BackSide;
+   
+  //criando skybox como boxGeometry com as texturas carregadas
+  let skyboxGeo = new THREE.BoxGeometry( 550, 250, 550);
+  let skybox = new THREE.Mesh( skyboxGeo, materialArray );
+  skybox.translateY(15);
+  skybox.castShadow = false;
+  skybox.receiveShadow = false;
+  scene.add( skybox );
+
+  //Criando Luz direcional
+  var colorLight = 0xffffff;
+  var intensityLight = 1;
+  dirLight = new THREE.DirectionalLight( colorLight, intensityLight );
+  dirLight.position.set(-100, 250, -150);
+  dirLight.castShadow = true;
+  scene.add( dirLight );
+  //Criando Sol
+  //var sunPosition = new THREE.Vector3(170, 170, 170);
+  //var sunSphere = createLightSphere(scene, 3.0, 10, 10, sunPosition);
+  //var sun = textureLoader.load('../assets/textures/sun.jpg');
+  //sunSphere.material.map = sun;
+ 
+  //Criando postes
+  //Poste 1
+  var spherePosition = new THREE.Vector3(0, 15, 0);
+  var c1 = Helper.createCylinder(0.5,0.5,30.0,30.0);
+  scene.add(c1);
+  c1.translateY(10.0).translateX(220.0);
+  var s1 = createLightSphere(scene, 1.5,45,45, spherePosition);
+  c1.add(s1);
+  //Poste 2
+  var c2 = Helper.createCylinder(0.5,0.5,30.0,30.0);
+  scene.add(c2);
+  c2.translateY(10.0).translateX(-220.0);
+  var s2 =  createLightSphere(scene, 1.5,45,45, spherePosition);
+  c2.add(s2);
+  //Poste 3
+  var c3 = Helper.createCylinder(0.5,0.5,30.0,30.0);
+  scene.add(c3);
+  c3.translateY(10.0).translateZ(220.0);
+  var s3 =  createLightSphere(scene, 1.5,45,45, spherePosition);
+  c3.add(s3);
+  //Poste 4
+  var c4 = Helper.createCylinder(0.5,0.5,30.0,30.0);
+  scene.add(c4);
+  c4.translateY(10.0).translateZ(-220.0);
+  var s4 =  createLightSphere(scene, 1.5,45,45, spherePosition);
+  c4.add(s4);
+
+  //Colocando iluminação nos postes
+  var lightColor = "rgb(255,255,255)";
+  //poste 1
+  var lightPosition1 = new THREE.Vector3(220, 30, 0);
+  var pointLight1 = new THREE.PointLight(lightColor,1,100,0.2);
+  pointLight1.position.copy(lightPosition1);
+  pointLight1.castShadow = false;
+  pointLight1.receiveShadow = false;
+  scene.add( pointLight1 );
+  //poste 2
+  var lightPosition2 = new THREE.Vector3(-220, 30, 0);
+  var pointLight2 = new THREE.PointLight(lightColor,1,100,0.2);
+  pointLight2.position.copy(lightPosition2);
+  pointLight2.castShadow = false;
+  scene.add( pointLight2 );
+  //poste 3
+  var lightPosition3 = new THREE.Vector3(0, 30, 220);
+  var pointLight3 = new THREE.PointLight(lightColor,1,100,0.2);
+  pointLight3.position.copy(lightPosition3);
+  pointLight3.castShadow = false;
+  scene.add( pointLight3 );
+  //poste 4
+  var lightPosition4 = new THREE.Vector3(0, 30, -220);
+  var pointLight4 = new THREE.PointLight(lightColor,1,100,0.2);
+  pointLight4.position.copy(lightPosition4);
+  pointLight4.castShadow = false;
+  scene.add( pointLight4 );
+
 
 
 
@@ -634,89 +821,136 @@
   let skeletonTween_05 =  skeletonObject_05.getTweenGroup();
 
 
-  /* Importante: */
+  var cameraPosition  = camera.getWorldPosition();
+  var cameraPositionNow = cameraPosition;
+  function selectCharacter(key, value){
+    switch (key) {
+      case 49: // 1
+          cameraPosition = camera.getWorldPosition();
+          cameraPosition = {x: cameraPosition.x, z:cameraPosition.z}
 
-  /* var tween = new TWEEN.Tween(skeleton_01.position)
-    .to({ x : -10.0, z:-15.0}, 3000)
-    .delay(2000)
-    .onUpdate(() => {
-      Helper.resetObjectMatrix(skeleton_01);
-      Helper.setSpherePosition(skeleton_01, skeleton_01.position.x, 1.05, skeleton_01.position.z);
-    })
-    .onComplete(() => {
-      //qualquer coisa
-    })
-    .start()
-    .repeat(3)
-    .yoyo(true); */
+          Object.assign(cameraPositionNow, cameraPosition);
+          
+          skeletonTween_01.start();
+          var tween = new TWEEN.Tween(skeleton_01.position)
+            .to(cameraPositionNow, 5000)
+            .onUpdate(() => {
+              Helper.resetObjectMatrix(skeleton_01);
+              Helper.setSpherePosition(skeleton_01, skeleton_01.position.x, 1.05, skeleton_01.position.z);
+            })
+            .start()
+            .onComplete(() => {
+              skeletonTween_01.stop();
+            })
+            .yoyo(true);
+          
+          
+          break;
+      case 50: // 2
+          cameraPosition = camera.getWorldPosition();
+          cameraPosition = {x: cameraPosition.x, z:cameraPosition.z}
 
+          Object.assign(cameraPositionNow, cameraPosition);
+          
+          skeletonTween_02.start();
+          var tween2 = new TWEEN.Tween(skeleton_02.position)
+            .to(cameraPositionNow, 5000)
+            .onUpdate(() => {
+              Helper.resetObjectMatrix(skeleton_02);
+              Helper.setSpherePosition(skeleton_02, skeleton_02.position.x, 1.05, skeleton_02.position.z);
+            })
+            .start()
+            .onComplete(() => {skeletonTween_02.stop()})
+            .yoyo(true);
+          break;
+      case 51: // 3
+          cameraPosition = camera.getWorldPosition();
+          cameraPosition = {x: cameraPosition.x, z:cameraPosition.z}
+
+          Object.assign(cameraPositionNow, cameraPosition);
+          
+          skeletonTween_03.start();
+          var tween3 = new TWEEN.Tween(skeleton_03.position)
+            .to(cameraPositionNow, 5000)
+            .onUpdate(() => {
+              Helper.resetObjectMatrix(skeleton_03);
+              Helper.setSpherePosition(skeleton_03, skeleton_03.position.x, 1.05, skeleton_03.position.z);
+            })
+            .start()
+            .onComplete(() => {skeletonTween_03.stop()})
+            .yoyo(true);
+          break;
+      case 52: // 4
+          cameraPosition = camera.getWorldPosition();
+          cameraPosition = {x: cameraPosition.x, z:cameraPosition.z}
+
+          Object.assign(cameraPositionNow, cameraPosition);
+          
+          skeletonTween_04.start();
+          var tween4 = new TWEEN.Tween(skeleton_04.position)
+            .to(cameraPositionNow, 5000)
+            .onUpdate(() => {
+              Helper.resetObjectMatrix(skeleton_04);
+              Helper.setSpherePosition(skeleton_04, skeleton_04.position.x, 1.05, skeleton_04.position.z);
+            })
+            .start()
+            .onComplete(() => {skeletonTween_04.stop()})
+            .yoyo(true);
+          break;
+      case 53: // 5
+          cameraPosition = camera.getWorldPosition();
+          cameraPosition = {x: cameraPosition.x, z:cameraPosition.z}
+
+          Object.assign(cameraPositionNow, cameraPosition);
+          
+          skeletonTween_05.start();
+          var tween5 = new TWEEN.Tween(skeleton_05.position)
+            .to(cameraPositionNow, 5000)
+            .onUpdate(() => {
+              Helper.resetObjectMatrix(skeleton_05);
+              Helper.setSpherePosition(skeleton_05, skeleton_05.position.x, 1.05, skeleton_05.position.z);
+            })
+            .start()
+            .onComplete(() => {skeletonTween_05.stop()})
+            .yoyo(true);
+          break;
+    }
+  }
 
   
 
-  buildInterface();
-  function buildInterface() {
-      var controls = {
-        start: () => {
-          console.log("start");
+  // function moveSkeleton(object){
+  //   var tween = new TWEEN.Tween(object.position)
+  //   .to(cameraPositionNow, 5000)
+  //   .onUpdate(() => {
+  //     Helper.resetObjectMatrix(object);
+  //     Helper.setSpherePosition(object, object.position.x, 1.05, object.position.z);
+  //   })
+  //   .start()
+  //   .yoyo(true);
+  //   return tween;
+  // }
 
-          skeletonTween_01.start();
-          skeletonTween_02.start();
-          skeletonTween_03.start();
-          skeletonTween_04.start();
-          skeletonTween_05.start();
-        },
-        stop: () => {
-          console.log("stop");
-        
-          skeletonTween_01.stop();
-          skeletonTween_02.stop();
-          skeletonTween_03.stop();
-          skeletonTween_04.stop();
-          skeletonTween_05.stop();
-        },
-        pause: () => {
-          console.log("pause");
-          walkAnimationOn = !walkAnimationOn;
-          stop = false;
-        },
-        viewAxes: () => {
-          axesHelper.visible = !axesHelper.visible;
-        }
-      };
-
-      // GUI interface
-      var gui = new dat.GUI();
-      var folder = gui.addFolder("Actions");
-      folder
-      .add(controls, "start", true)
-      .name("Start");
-      
-      folder
-      .add(controls, "stop", false)
-      .name("Stop");
-
-      folder
-      .add(controls, "pause", false)
-      .name("Pause");
-
-      folder.open();
-      gui.add(controls, "viewAxes").name("View Axes");
-    }
+  
 
 
-  //   /* FIM: Segundo trabalho */
+ 
   
   window.addEventListener( 'resize', function(){onWindowResize(camera, renderer)}, false );
-
+  const clock = new THREE.Clock();
   render();
+  
   function render()
-  {
+  { 
     stats.update(); // Update FPS
-    trackballControls.update(); // Enable mouse movements
+    if (controls.isLocked) {
+      moveAnimate(clock.getDelta());
+    }
     requestAnimationFrame(render);
     TWEEN.update();
     renderer.render(scene, camera) // Render scene
   }
+
 
 } 
 
